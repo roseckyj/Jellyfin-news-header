@@ -25,10 +25,33 @@
     `;
 
     const STYLE_ID = 'jellyfin-news-header-styles';
+    let lastInsertStatus;
+
+    function log(message, details) {
+        if (details === undefined) {
+            console.info(`[Jellyfin news] ${message}`);
+        } else {
+            console.info(`[Jellyfin news] ${message}`, details);
+        }
+    }
+
+    function logInsertStatus(status, details) {
+        if (status === lastInsertStatus) {
+            return;
+        }
+
+        lastInsertStatus = status;
+        log(status, details);
+    }
 
     function isDismissed() {
         try {
-            return window.localStorage.getItem(STORAGE_KEY) === 'dismissed';
+            const dismissed = window.localStorage.getItem(STORAGE_KEY) === 'dismissed';
+            logInsertStatus(
+                dismissed ? 'Announcement is dismissed.' : 'Announcement is not dismissed.',
+                { storageKey: STORAGE_KEY }
+            );
+            return dismissed;
         } catch (error) {
             console.warn('[Jellyfin news] Unable to read localStorage.', error);
             return false;
@@ -145,7 +168,17 @@
 
     function insertAnnouncement() {
         const homeTab = document.querySelector('#homeTab');
-        if (!homeTab || isDismissed() || document.getElementById(CONTAINER_ID)) {
+        if (!homeTab) {
+            logInsertStatus('Waiting for #homeTab.');
+            return;
+        }
+
+        if (isDismissed()) {
+            return;
+        }
+
+        if (document.getElementById(CONTAINER_ID)) {
+            logInsertStatus('Announcement is already present.');
             return;
         }
 
@@ -155,20 +188,26 @@
         // Jellyfin versions that do not have that container yet.
         const homeContent = homeTab.querySelector('.sections') || homeTab;
         homeContent.prepend(createAnnouncement());
+        logInsertStatus('Announcement inserted.', {
+            target: homeContent === homeTab ? '#homeTab' : '#homeTab .sections'
+        });
     }
 
     function start() {
         // Custom JavaScript can be evaluated before <body> exists.
         if (!document.body) {
+            log('Script loaded; waiting for DOMContentLoaded.');
             document.addEventListener('DOMContentLoaded', start, { once: true });
             return;
         }
 
+        log('Script loaded; starting.');
         insertAnnouncement();
 
         // Jellyfin replaces the home view during navigation, so retry when its DOM changes.
         const observer = new MutationObserver(insertAnnouncement);
         observer.observe(document.body, { childList: true, subtree: true });
+        log('Watching the document for Jellyfin view changes.');
     }
 
     start();
