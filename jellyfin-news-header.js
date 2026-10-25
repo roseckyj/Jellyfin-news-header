@@ -150,12 +150,26 @@
         }
 
         addStyles();
-        homeTab.prepend(createAnnouncement());
+        // The sections container is where Jellyfin renders the home content.
+        // Falling back to the tab itself keeps this compatible with older
+        // Jellyfin versions that do not have that container yet.
+        const homeContent = homeTab.querySelector('.sections') || homeTab;
+        homeContent.prepend(createAnnouncement());
     }
 
-    insertAnnouncement();
+    function start() {
+        // Custom JavaScript can be evaluated before <body> exists.
+        if (!document.body) {
+            document.addEventListener('DOMContentLoaded', start, { once: true });
+            return;
+        }
 
-    // Jellyfin replaces the home view during navigation, so retry when its DOM changes.
-    const observer = new MutationObserver(insertAnnouncement);
-    observer.observe(document.body, { childList: true, subtree: true });
+        insertAnnouncement();
+
+        // Jellyfin replaces the home view during navigation, so retry when its DOM changes.
+        const observer = new MutationObserver(insertAnnouncement);
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
+
+    start();
 })();
