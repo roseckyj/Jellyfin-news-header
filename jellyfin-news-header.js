@@ -1,30 +1,30 @@
 (() => {
-    'use strict';
+    "use strict";
 
     /*
      * Change this value whenever you publish a new announcement. A new value
      * creates a new localStorage key, so users will see the announcement again.
      */
-    const NEWS_ID = 'jellyfin-release-10-10-0';
+    const NEWS_ID = "jellyfin-release-2026-10-25";
     const STORAGE_KEY = `jellyfin-news-dismissed:${NEWS_ID}`;
     const CONTAINER_ID = `jellyfin-news-${NEWS_ID}`;
 
     // Edit this trusted HTML to describe the latest release.
+    const NEWS_TITLE = "Novinky v Jellyfinu (25. 10. 2026)";
     const NEWS_CONTENT = `
-        <p><strong>Nejnovější verze Jellyfinu je tady!</strong></p>
-        <p>
-            Přidali jsme rychlejší načítání knihovny, vylepšené titulky
-            a několik oprav přehrávání na mobilních zařízeních.
-        </p>
+        <p><strong>Máme tu balík novinek, které nechceš přehlédnout!</strong></p>
         <ul>
-            <li>přehlednější obrazovka přehrávače,</li>
-            <li>spolehlivější synchronizace sledovaného obsahu,</li>
-            <li>další opravy a vylepšení výkonu.</li>
+            <li><strong>Lepší vyhledávání:</strong> Nahradil jsem pomalý plugin pro Seerr rychlejším JE Enhanced. Nové filmy a seriály můžete pořád hledat klasicky ve vyhledávání, nebo se podívat na <i class="material-icons">auto_awesome</i> <a href="#/home?tab=2&jeTab=recommendations">Doporučení</a>. Svoje stahování můžete kontrolovat pod ikonkou <i class="material-icons">download</i> <a href="#/home?tab=3&jeTab=requests">Stahování</a> vpravo nahoře. </li>
+            <li><strong>Komunitní hodnocení:</strong> Podělte se o filmy a seriály, které se vám líbily a nelíbily. Na stránce každého filmu či seriálu nově najdete sekci Recenze, kam můžete přidatsvoje hodnocení ať už hvězdičkami, nebo i slovy. Na filmy, které hodnotili ostatní se můžete podívat vpravo nahoře pod ikonkou <i class="material-icons">history</i> <a href="#/home?tab=7&jeTab=activity">Aktivity</a>.</li>
+            <li><strong>Kalendář nových dílů:</strong> Zajímá vás, kdy vychází další díl vašeho oblíbeného seriálu? Koukněte se do <i class="material-icons">calendar_month</i> <a href="#/home?tab=2&jeTab=calendar">Kalendáře</a> vpravo nahoře.</li>
+            <li><strong>Watchlist:</strong> Chcete se na film či seriál podívat později? Přidejte ho do svého <i class="material-icons">bookmark</i> <a href="#/watchlist">Watchlistu</a> a neztratíte ho.</li>
+            <li><strong>Další novinky:</strong> Pokud hledáte inspiraci, můžete si nechat vygenerovat <i class="material-icons">casino</i> Náhodný film, nebo zkusit dohnat, co vám uniklo pomocí <i class="material-icons">style</i> <a href="#/userpluginsettings.html?pageUrl=/JellyfinEnhanced/catchUpPage">Catch Up</a>.</li>
         </ul>
-        <p>Podrobnosti najdete v <a href="https://jellyfin.org/docs/" target="_blank" rel="noopener noreferrer">poznámkách k vydání</a>.</p>
+        <p>Doufám, že se vám tu líbí, kdybyste narazili na problém, dejte mi vědět <i class="material-icons">favorite</i>.</p>
+        <p>— Jonáš</p>
     `;
 
-    const STYLE_ID = 'jellyfin-news-header-styles';
+    const STYLE_ID = "jellyfin-news-header-styles";
     let lastInsertStatus;
 
     function log(message, details) {
@@ -46,23 +46,26 @@
 
     function isDismissed() {
         try {
-            const dismissed = window.localStorage.getItem(STORAGE_KEY) === 'dismissed';
+            const dismissed =
+                window.localStorage.getItem(STORAGE_KEY) === "dismissed";
             logInsertStatus(
-                dismissed ? 'Announcement is dismissed.' : 'Announcement is not dismissed.',
-                { storageKey: STORAGE_KEY }
+                dismissed
+                    ? "Announcement is dismissed."
+                    : "Announcement is not dismissed.",
+                { storageKey: STORAGE_KEY },
             );
             return dismissed;
         } catch (error) {
-            console.warn('[Jellyfin news] Unable to read localStorage.', error);
+            console.warn("[Jellyfin news] Unable to read localStorage.", error);
             return false;
         }
     }
 
     function dismiss() {
         try {
-            window.localStorage.setItem(STORAGE_KEY, 'dismissed');
+            window.localStorage.setItem(STORAGE_KEY, "dismissed");
         } catch (error) {
-            console.warn('[Jellyfin news] Unable to save dismissal.', error);
+            console.warn("[Jellyfin news] Unable to save dismissal.", error);
         }
     }
 
@@ -71,18 +74,19 @@
             return;
         }
 
-        const style = document.createElement('style');
+        const style = document.createElement("style");
         style.id = STYLE_ID;
         style.textContent = `
             #${CONTAINER_ID} {
                 box-sizing: border-box;
                 margin: 0 0 1.5em;
                 padding: 1em 1.25em;
+                border: var(--defaultBorder);
                 border-left: 4px solid var(--theme-primary-color, #00a4dc);
-                border-radius: 4px;
+                border-radius: var(--largerRadius);
                 color: var(--primary-text-color, inherit);
                 background: var(--card-background-color, rgba(255, 255, 255, 0.08));
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+                box-shadow: var(--cardShadow);
             }
 
             #${CONTAINER_ID} summary {
@@ -93,6 +97,10 @@
                 color: var(--theme-primary-color, #00a4dc);
                 font-weight: 600;
                 list-style: none;
+            }
+
+            #${CONTAINER_ID} summary .jellyfin-news-dismiss {
+                margin: 0 0 0 auto;
             }
 
             #${CONTAINER_ID} summary::-webkit-details-marker {
@@ -144,32 +152,35 @@
     }
 
     function createAnnouncement() {
-        const announcement = document.createElement('details');
+        const announcement = document.createElement("details");
         announcement.id = CONTAINER_ID;
-        announcement.className = 'jellyfin-news-header';
-        announcement.open = true;
+        announcement.className = "jellyfin-news-header";
         announcement.innerHTML = `
-            <summary>Co je nového</summary>
-            <div class="jellyfin-news-body">
+            <summary>
+                <span>${NEWS_TITLE}</span>
                 <button class="jellyfin-news-dismiss" type="button" title="Skrýt toto oznámení">×</button>
+            </summary>
+            <div class="jellyfin-news-body">
                 ${NEWS_CONTENT}
             </div>
         `;
 
-        announcement.querySelector('.jellyfin-news-dismiss').addEventListener('click', (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            dismiss();
-            announcement.remove();
-        });
+        announcement
+            .querySelector(".jellyfin-news-dismiss")
+            .addEventListener("click", (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                dismiss();
+                announcement.remove();
+            });
 
         return announcement;
     }
 
     function insertAnnouncement() {
-        const homeTab = document.querySelector('#homeTab');
+        const homeTab = document.querySelector("#homeTab");
         if (!homeTab) {
-            logInsertStatus('Waiting for #homeTab.');
+            logInsertStatus("Waiting for #homeTab.");
             return;
         }
 
@@ -178,7 +189,7 @@
         }
 
         if (document.getElementById(CONTAINER_ID)) {
-            logInsertStatus('Announcement is already present.');
+            logInsertStatus("Announcement is already present.");
             return;
         }
 
@@ -186,28 +197,33 @@
         // The sections container is where Jellyfin renders the home content.
         // Falling back to the tab itself keeps this compatible with older
         // Jellyfin versions that do not have that container yet.
-        const homeContent = homeTab.querySelector('.sections') || homeTab;
-        homeContent.prepend(createAnnouncement());
-        logInsertStatus('Announcement inserted.', {
-            target: homeContent === homeTab ? '#homeTab' : '#homeTab .sections'
+        const homeContent = homeTab.querySelector(".sections") || homeTab;
+        const wrapper = document.createElement("div");
+        wrapper.className = "padded-left padded-right";
+        wrapper.append(createAnnouncement());
+        homeContent.prepend(wrapper);
+        logInsertStatus("Announcement inserted.", {
+            target: homeContent === homeTab ? "#homeTab" : "#homeTab .sections",
         });
     }
 
     function start() {
         // Custom JavaScript can be evaluated before <body> exists.
         if (!document.body) {
-            log('Script loaded; waiting for DOMContentLoaded.');
-            document.addEventListener('DOMContentLoaded', start, { once: true });
+            log("Script loaded; waiting for DOMContentLoaded.");
+            document.addEventListener("DOMContentLoaded", start, {
+                once: true,
+            });
             return;
         }
 
-        log('Script loaded; starting.');
+        log("Script loaded; starting.");
         insertAnnouncement();
 
         // Jellyfin replaces the home view during navigation, so retry when its DOM changes.
         const observer = new MutationObserver(insertAnnouncement);
         observer.observe(document.body, { childList: true, subtree: true });
-        log('Watching the document for Jellyfin view changes.');
+        log("Watching the document for Jellyfin view changes.");
     }
 
     start();
